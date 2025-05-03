@@ -7,11 +7,15 @@ This repository provides a collection of custom PowerShell functions to enhance 
 - **`cdfc`**: Navigate directories and open them in VSCode.
 - **`grep`**: Search files for patterns using `grep`-like functionality.
 
+## Demo
+
+![Demo](demo/demo.gif)
+
 ## Installation
 
 You can install these functions using either of the following methods:
 
-### 1. Clone the Repository
+### 1. via Git Clone
 
 ```powershell
 git clone https://github.com/rafimaliki/custom-powershell-commands.git
@@ -25,7 +29,7 @@ Then, run the installation scripts:
 .\ps-grep-install.ps1
 ```
 
-### 2. Use Invoke-WebRequest
+### 2. via Invoke-WebRequest
 
 Install the `cdf`, `cdff`, and `cdfc` functions:
 
