@@ -4,8 +4,7 @@
 $profilePath = $PROFILE
 
 # Define the grep function
-$grepFunction = @"
-# Function: grep
+$grepFunction = @'
 function grep {
     param(
         [string]$Pattern,   # The pattern you're searching for
@@ -20,7 +19,7 @@ function grep {
     # Use Get-ChildItem to get all files recursively, then pipe to Select-String
     Get-ChildItem -Path $Path -Recurse -File | Select-String -Pattern $Pattern
 }
-"@
+'@
 
 # Add grep function to profile
 Add-Content -Path $profilePath -Value $grepFunction
