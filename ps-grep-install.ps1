@@ -1,8 +1,5 @@
 # ps-grep-install.ps1
 
-# Install grep function
-$profilePath = $PROFILE
-
 # Get PowerShell profile path
 $profilePath = $PROFILE
 
