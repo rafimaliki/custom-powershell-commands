@@ -21,11 +21,22 @@ if (-not $fzfPath) {
     Write-Host "fzf is already installed."
 }
 
-# Add fzf-related functions (cdf, cdff, cdfc)
+
+# Get PowerShell profile path
 $profilePath = $PROFILE
 
-# Define the functions
+# Ensure the directory exists
+$profileDir = Split-Path $profilePath
+if (-not (Test-Path $profileDir)) {
+    New-Item -Path $profileDir -ItemType Directory -Force | Out-Null
+}
 
+# Ensure the profile file exists
+if (-not (Test-Path $profilePath)) {
+    New-Item -Path $profilePath -ItemType File -Force | Out-Null
+}
+
+# Functions
 $customFzfFunctions = @'
 function cdf {
     $esc = [char]27

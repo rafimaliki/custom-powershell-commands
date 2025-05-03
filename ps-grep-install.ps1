@@ -3,7 +3,21 @@
 # Install grep function
 $profilePath = $PROFILE
 
-# Define the grep function
+# Get PowerShell profile path
+$profilePath = $PROFILE
+
+# Ensure the directory exists
+$profileDir = Split-Path $profilePath
+if (-not (Test-Path $profileDir)) {
+    New-Item -Path $profileDir -ItemType Directory -Force | Out-Null
+}
+
+# Ensure the profile file exists
+if (-not (Test-Path $profilePath)) {
+    New-Item -Path $profilePath -ItemType File -Force | Out-Null
+}
+
+# Function
 $grepFunction = @'
 function grep {
     param(
