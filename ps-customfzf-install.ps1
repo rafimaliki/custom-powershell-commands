@@ -1,44 +1,59 @@
-# ps-customfzf-install.ps1
+cls
 
-# Check if fzf is installed
-$fzfPath = Get-Command fzf -ErrorAction SilentlyContinue
-if (-not $fzfPath) {
-    Write-Host "fzf is not found. Installing fzf..."
-    
-    # Try installing using winget (Windows package manager)
-    if (Get-Command winget -ErrorAction SilentlyContinue) {
-        winget install --id=fzf.fzf
-    }
-    # If winget isn't available, try choco
-    elseif (Get-Command choco -ErrorAction SilentlyContinue) {
-        choco install fzf
-    }
-    # Download fzf manually if no package manager found
-    else {
-        Write-Host "No package manager found. Please install fzf manually from https://github.com/junegunn/fzf"
-    }
-} else {
-    Write-Host "fzf is already installed."
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
+
+function /flashmind {
+    $old = Get-Location
+    Set-Location "C:\Files\Source-Code\Non-Kuliah\Notes-App\flashmind"
+    npm run start
+    Set-Location $old
 }
 
-
-# Get PowerShell profile path
-$profilePath = $PROFILE
-
-# Ensure the directory exists
-$profileDir = Split-Path $profilePath
-if (-not (Test-Path $profileDir)) {
-    New-Item -Path $profileDir -ItemType Directory -Force | Out-Null
+function /memo {
+    Set-Location "C:\Files\Source-Code\Non-Kuliah\Notes-App\my-memo"
 }
 
-# Ensure the profile file exists
-if (-not (Test-Path $profilePath)) {
-    New-Item -Path $profilePath -ItemType File -Force | Out-Null
+function /sync {
+    param(
+        [Parameter(Mandatory = $true, Position = 0)]
+        [ValidateSet('leetcode')]
+        [string]$target,
+        [switch]$nc
+    )
+
+    switch ($target) {
+        'leetcode' {
+            $scriptDir = "C:\Files\Source-Code\Non-Kuliah\Leetcode\markdown-generator"
+
+            if ($nc) {
+                py "$scriptDir\main.py" --nocheck
+            } else {
+                py "$scriptDir\main.py"
+            }
+        }
+    }
 }
 
-# Functions
-$customFzfFunctions = @'
-function cdf {
+function /src {
+    Set-Location "C:\Files\Source-Code"
+}
+
+function /ta {
+    param(
+        [Parameter(Mandatory = $true, Position = 0)]
+        [ValidateSet('fe', 'be', 'doc')]
+        [string]$target
+    )
+
+    switch ($target) {
+        'fe'  { Set-Location "C:\Files\Source-Code\Kuliah\Tugas_Akhir\Aplikasi_OBE\frontend" }
+        'be'  { Set-Location "C:\Files\Source-Code\Kuliah\Tugas_Akhir\Aplikasi_OBE\backend" }
+        'doc' { Set-Location "C:\Files\Source-Code\Kuliah\Tugas_Akhir\Tugas_Akhir" }
+    }
+}
+
+# Custom command to navigate files/folders using fzf
+function /cd {
     $esc = [char]27
     $current = Get-Location
 
@@ -103,145 +118,38 @@ function cdf {
     }
 }
 
-function cdfc {
-    $esc = [char]27
-    $current = Get-Location
+# Help command to list all custom commands with descriptions
+function /help {
+    $commands = @(
+        [PSCustomObject]@{ Command = '/flashmind'; Description = 'Start FlashMind' }
+        [PSCustomObject]@{ Command = '/memo';      Description = 'Go to my-memo project directory' }
+        [PSCustomObject]@{ Command = '/sync';      Description = 'Run sync script (example: /sync leetcode [-nc])' }
+        [PSCustomObject]@{ Command = '/src';       Description = 'Go to Source-Code root directory' }
+        [PSCustomObject]@{ Command = '/ta';        Description = 'Go to TA folder (fe|be|doc)' }
+        [PSCustomObject]@{ Command = '/cd';        Description = 'Navigate files/folders with fzf' }
+        [PSCustomObject]@{ Command = '/help';      Description = 'Show this custom command list' }
+    )
 
-    while ($true) {
-        $previous = $current
-        $dirs = @(Get-ChildItem -Path $current -Directory | ForEach-Object {
-            [PSCustomObject]@{
-                Name        = $_.Name + '/'
-                FullPath    = $_.FullName
-                DisplayName = $_.Name + '/'
-                Type        = 'Directory'
-            }
-        })
-        $files = @(Get-ChildItem -Path $current -File | ForEach-Object {
-            [PSCustomObject]@{
-                Name        = $_.Name
-                FullPath    = $_.FullName
-                DisplayName = "$esc[38;5;240m$($_.Name)$esc[0m"
-                Type        = 'File'
-            }
-        })
-
-        $items = $dirs + $files
-        $fzfResult = $items.DisplayName |
-            fzf --ansi --expect=enter,right,left `
-                --prompt "$current> " `
-                --layout=reverse-list --height=40% --border
-        if (-not $fzfResult) { return }
-
-        $key  = $fzfResult[0]
-        $name = $fzfResult[1]
-
-        # strip ANSI from selection to find object
-        $stripped = $name -replace "$esc\[[0-9;]*m", ''
-
-        if ($key -eq 'left' -and $current -eq (Get-PSDrive -PSProvider FileSystem | Where Root -eq $current).Root) {
-            continue
-        }
-        if ($key -eq 'left') {
-            $parent = Split-Path $current -Parent
-            if ($parent -ne $current) {
-                $current = $parent
-            }
-            continue
-        }
-
-        $selected = $items | Where-Object { $_.Name -eq $stripped }
-        if (-not $selected) { return }
-
-        if ($selected.Type -eq 'Directory') {
-            if ($key -eq 'enter') {
-                Set-Location $selected.FullPath
-                code .
-                return
-            } elseif ($key -eq 'right') {
-                $current = $selected.FullPath
-            }
-        } else {
-            if ($key -eq 'enter') {
-                Start-Process $selected.FullPath
-                return
-            }
-        }
-    }
+    $commands | Format-Table -AutoSize
 }
 
-function cdff {
-    $esc = [char]27
-    $current = Get-Location
 
-    while ($true) {
-        $previous = $current
-        $dirs = @(Get-ChildItem -Path $current -Directory | ForEach-Object {
-            [PSCustomObject]@{
-                Name        = $_.Name + '/'
-                FullPath    = $_.FullName
-                DisplayName = $_.Name + '/'
-                Type        = 'Directory'
-            }
-        })
-        $files = @(Get-ChildItem -Path $current -File | ForEach-Object {
-            [PSCustomObject]@{
-                Name        = $_.Name
-                FullPath    = $_.FullName
-                DisplayName = "$esc[38;5;240m$($_.Name)$esc[0m"
-                Type        = 'File'
-            }
-        })
+# Custom prompt function to show current directory and git branch (if inside a git repository)
+function prompt {
+    $branch = ''
+    try {
+        if (git rev-parse --is-inside-work-tree 2>$null) {
+            $branchName = git rev-parse --abbrev-ref HEAD 2>$null
+            if ($branchName) {
+                $branchText = " [ $branchName]"
+                $color = if ($branchName -eq 'main') { 'Green' } else { 'DarkGray' }
 
-        $items = $dirs + $files
-        $fzfResult = $items.DisplayName |
-            fzf --ansi --expect=enter,right,left `
-                --prompt "$current> " `
-                --layout=reverse-list --height=40% --border
-        if (-not $fzfResult) { return }
-
-        $key  = $fzfResult[0]
-        $name = $fzfResult[1]
-
-        # strip ANSI from selection to find object
-        $stripped = $name -replace "$esc\[[0-9;]*m", ''
-
-        if ($key -eq 'left' -and $current -eq (Get-PSDrive -PSProvider FileSystem | Where Root -eq $current).Root) {
-            continue
-        }
-        if ($key -eq 'left') {
-            $parent = Split-Path $current -Parent
-            if ($parent -ne $current) {
-                $current = $parent
-            }
-            continue
-        }
-
-        $selected = $items | Where-Object { $_.Name -eq $stripped }
-        if (-not $selected) { return }
-
-        if ($selected.Type -eq 'Directory') {
-            if ($key -eq 'enter') {
-                Set-Location $selected.FullPath
-                Start-Process explorer .
-                return
-            } elseif ($key -eq 'right') {
-                $current = $selected.FullPath
-            }
-        } else {
-            if ($key -eq 'enter') {
-                Start-Process $selected.FullPath
-                return
+                Write-Host "$PWD" -NoNewline
+                Write-Host "$branchText" -NoNewline -ForegroundColor $color
+                return "> "
             }
         }
-    }
+    } catch {}
+
+    return "$PWD> "
 }
-
-'@
-
-
-# Add functions to profile
-Add-Content -Path $profilePath -Value $customFzfFunctions
-
-Write-Host "fzf functions (cdf, cdff, cdfc) have been added to your PowerShell profile."
-Write-Host "Please restart your PowerShell session to use the new functions."
